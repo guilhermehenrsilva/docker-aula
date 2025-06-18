@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -24,7 +25,14 @@
                 <button type="submit">Calcular</button>
             </form>
             
+            <div class="nav-links">
+                <a href="relatorio.php">Ver Relatório de Cálculos</a>
+            </div>
+            
             <?php
+            // Importar configurações de banco de dados
+            require_once 'config/database.php';
+            
             if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Obter notas do formulário
                 $semesterGrade = filter_input(INPUT_POST, 'semesterGrade', FILTER_VALIDATE_FLOAT);
@@ -52,6 +60,26 @@
                     echo "<p><strong>Nota Final:</strong> " . number_format($finalGrade, 1) . "</p>";
                     echo "<p><strong>Situação:</strong> <span class='$statusClass'>$status</span></p>";
                     echo "</div>";
+                    
+                    // Salvar no banco de dados
+                    $conn = conectarBD();
+                    if ($conn) {
+                        try {
+                            $stmt = $conn->prepare("INSERT INTO calculos (nota_semestre, nota_prova_final, nota_final, situacao) 
+                                                  VALUES (:semesterGrade, :finalExamGrade, :finalGrade, :status)");
+                            
+                            $stmt->bindParam(':semesterGrade', $semesterGrade);
+                            $stmt->bindParam(':finalExamGrade', $finalExamGrade);
+                            $stmt->bindParam(':finalGrade', $finalGrade);
+                            $stmt->bindParam(':status', $status);
+                            
+                            $stmt->execute();
+                            echo "<p class='success'>Cálculo salvo com sucesso!</p>";
+                        } catch (PDOException $e) {
+                            echo getDbErrorMessage($e);
+                        }
+                        $conn = null;
+                    }
                 }
             }
             ?>
